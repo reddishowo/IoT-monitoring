@@ -109,7 +109,7 @@ export default function TrafficMonitoring() {
       <div className="bg-base-200 shadow-md">
         <div className="navbar container mx-auto">
           <div className="flex-1">
-            <a className="btn btn-ghost text-xl font-bold text-base-content">IoT Deteksi Pelanggaran</a>
+            <a className="btn btn-ghost text-xl font-bold text-base-content">Traffic Monitor</a>
           </div>
           <div className="flex-none">
             <select 
