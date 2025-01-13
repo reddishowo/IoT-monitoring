@@ -29,63 +29,99 @@ export default function TrafficMonitoring() {
     message: 'Menghubungkan ke MQTT broker...',
     type: 'info',
   });
+  const [mqttClient, setMqttClient] = useState<mqtt.MqttClient | null>(null);
 
   const MAX_VIOLATIONS = 10;
 
   useEffect(() => {
-    const client = mqtt.connect('ws://broker.emqx.io:8084/mqtt');
+    let client: mqtt.MqttClient | null = null;
 
-    client.on('connect', () => {
-      setConnectionStatus({
-        message: 'Terhubung ke MQTT broker',
-        type: 'success',
+    // MQTT connection
+    try {
+      const options: mqtt.IClientOptions = {
+        keepalive: 30,
+        protocolId: 'MQTT',
+        protocolVersion: 4 as const,
+        clean: true,
+        reconnectPeriod: 1000,
+        connectTimeout: 30 * 1000,
+        rejectUnauthorized: false
+      };
+
+      client = mqtt.connect('wss://broker.emqx.io:8084/mqtt', options);
+      setMqttClient(client);
+
+      client.on('connect', () => {
+        setConnectionStatus({
+          message: 'Terhubung ke MQTT broker',
+          type: 'success',
+        });
+        client?.subscribe('traffic/#');
       });
-      client.subscribe('traffic/#');
-    });
 
-    client.on('offline', () => {
+      client.on('offline', () => {
+        setConnectionStatus({
+          message: 'Terputus dari MQTT broker',
+          type: 'error',
+        });
+      });
+
+      client.on('message', (topic: string, message: Buffer) => {
+        const messageStr = message.toString();
+
+        switch (topic) {
+          case 'traffic/sensor1':
+            setSensor1Value(`${messageStr} cm`);
+            break;
+          case 'traffic/sensor2':
+            setSensor2Value(`${messageStr} cm`);
+            break;
+          case 'traffic/light':
+            setLightStatus(messageStr);
+            break;
+          case 'traffic/violation':
+            const newViolation: ViolationItem = {
+              message: messageStr,
+              timestamp: new Date().toLocaleTimeString(),
+              type: messageStr.includes('Pedestrian detected') ? 'pedestrian' : 'vehicle',
+            };
+            setViolations((prev) => {
+              const updated = [newViolation, ...prev];
+              return updated.slice(0, MAX_VIOLATIONS);
+            });
+            break;
+        }
+      });
+
+      client.on('error', (error: Error) => {
+        console.error('MQTT Error:', error);
+        setConnectionStatus({
+          message: `Koneksi error: ${error.message}`,
+          type: 'error',
+        });
+      });
+    } catch (error) {
+      console.error('MQTT Connection Error:', error);
       setConnectionStatus({
-        message: 'Terputus dari MQTT broker',
+        message: 'Gagal menghubungkan ke MQTT broker',
         type: 'error',
       });
-    });
+    }
 
-    client.on('message', (topic: string, message: Buffer) => {
-      const messageStr = message.toString();
-
-      switch (topic) {
-        case 'traffic/sensor1':
-          setSensor1Value(`${messageStr} cm`);
-          break;
-        case 'traffic/sensor2':
-          setSensor2Value(`${messageStr} cm`);
-          break;
-        case 'traffic/light':
-          setLightStatus(messageStr);
-          break;
-        case 'traffic/violation':
-          const newViolation: ViolationItem = {
-            message: messageStr,
-            timestamp: new Date().toLocaleTimeString(),
-            type: messageStr.includes('Pedestrian detected') ? 'pedestrian' : 'vehicle',
-          };
-          setViolations((prev) => {
-            const updated = [newViolation, ...prev];
-            return updated.slice(0, MAX_VIOLATIONS);
-          });
-          break;
-      }
-    });
-
-    client.on('error', (error: Error) => {
-      setConnectionStatus({
-        message: `Error: ${error.message}`,
-        type: 'error',
-      });
-    });
-
+    // Cleanup function
     return () => {
-      client.end();
+      if (client) {
+        try {
+          client.end(true, () => {
+            setConnectionStatus({
+              message: 'Koneksi diputus',
+              type: 'info',
+            });
+          });
+        } catch (error) {
+          console.error('Cleanup Error:', error);
+        }
+      }
     };
   }, []);
 
@@ -105,7 +141,6 @@ export default function TrafficMonitoring() {
 
   return (
     <div className="min-h-screen bg-base-100">
-      {/* Navbar with gradient */}
       <div className="bg-base-200 shadow-md">
         <div className="navbar container mx-auto">
           <div className="flex-1">
