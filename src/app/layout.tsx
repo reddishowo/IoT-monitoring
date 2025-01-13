@@ -7,7 +7,6 @@ export const metadata: Metadata = {
   description: "Real-time traffic monitoring system with MQTT integration",
   keywords: ["traffic", "monitoring", "real-time", "mqtt", "sensors"],
   authors: [{ name: "Traffic System" }],
-  viewport: "width=device-width, initial-scale=1",
   robots: "index, follow",
 };
 
