@@ -29,14 +29,12 @@ export default function TrafficMonitoring() {
     message: 'Menghubungkan ke MQTT broker...',
     type: 'info',
   });
-  const [mqttClient, setMqttClient] = useState<mqtt.MqttClient | null>(null);
 
   const MAX_VIOLATIONS = 10;
 
   useEffect(() => {
     let client: mqtt.MqttClient | null = null;
 
-    // MQTT connection
     try {
       const options: mqtt.IClientOptions = {
         keepalive: 30,
@@ -49,7 +47,6 @@ export default function TrafficMonitoring() {
       };
 
       client = mqtt.connect('wss://broker.emqx.io:8084/mqtt', options);
-      setMqttClient(client);
 
       client.on('connect', () => {
         setConnectionStatus({
@@ -108,7 +105,6 @@ export default function TrafficMonitoring() {
       });
     }
 
-    // Cleanup function
     return () => {
       if (client) {
         try {
@@ -173,7 +169,6 @@ export default function TrafficMonitoring() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* Traffic Light Status */}
           <div className="card bg-base-200 shadow-xl hover:shadow-2xl transition-shadow duration-200">
             <div className="card-body">
               <div className="flex items-center gap-2 text-base-content">
@@ -188,7 +183,6 @@ export default function TrafficMonitoring() {
             </div>
           </div>
 
-          {/* Vehicle Sensor */}
           <div className="card bg-base-200 shadow-xl hover:shadow-2xl transition-shadow duration-200">
             <div className="card-body">
               <div className="flex items-center gap-2 text-base-content">
@@ -202,7 +196,6 @@ export default function TrafficMonitoring() {
             </div>
           </div>
 
-          {/* Pedestrian Sensor */}
           <div className="card bg-base-200 shadow-xl hover:shadow-2xl transition-shadow duration-200">
             <div className="card-body">
               <div className="flex items-center gap-2 text-base-content">
@@ -217,7 +210,6 @@ export default function TrafficMonitoring() {
           </div>
         </div>
 
-        {/* Violations */}
         <div className="card bg-base-200 shadow-xl mb-8">
           <div className="card-body">
             <div className="flex items-center gap-2 text-base-content">
@@ -251,7 +243,6 @@ export default function TrafficMonitoring() {
           </div>
         </div>
 
-        {/* Connection Status */}
         <div className={`alert shadow-lg ${
           connectionStatus.type === 'success'
             ? 'alert-success text-success-content'
